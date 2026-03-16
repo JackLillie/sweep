@@ -173,69 +173,45 @@ final class AppViewModel: ObservableObject {
         storageCategories = []
         largeFiles = []
 
-        // Analyze /Applications
-        storageActivity = "Analyzing Applications..."
-        if let appsAnalysis = try? await bridge.analyze(path: "/Applications") {
-            let appsSize = appsAnalysis.entries.reduce(Int64(0)) { $0 + $1.size }
-            if appsSize > 0 {
-                storageCategories.append(StorageCategory(name: "Applications", size: appsSize, color: "blue", icon: "app.fill"))
-                storageCategories.sort { $0.size > $1.size }
-            }
+        let home = NSHomeDirectory()
+
+        struct ScanTarget {
+            let name: String
+            let paths: [String]
+            let color: String
+            let icon: String
         }
 
-        // Analyze home directory
-        storageActivity = "Analyzing home directory..."
-        let analysis = try? await bridge.analyze(path: NSHomeDirectory())
+        let targets: [ScanTarget] = [
+            ScanTarget(name: "Applications", paths: ["/Applications"], color: "blue", icon: "app.fill"),
+            ScanTarget(name: "Documents", paths: ["\(home)/Documents", "\(home)/Desktop"], color: "orange", icon: "doc.fill"),
+            ScanTarget(name: "Downloads", paths: ["\(home)/Downloads"], color: "cyan", icon: "arrow.down.circle.fill"),
+            ScanTarget(name: "Projects", paths: ["\(home)/Projects", "\(home)/Developer", "\(home)/GitHub", "\(home)/dev", "\(home)/repos"], color: "green", icon: "folder.fill"),
+            ScanTarget(name: "Media", paths: ["\(home)/Movies", "\(home)/Music", "\(home)/Pictures"], color: "pink", icon: "photo.fill"),
+            ScanTarget(name: "Developer & Libraries", paths: ["\(home)/Library"], color: "purple", icon: "hammer.fill"),
+        ]
 
-        if let entries = analysis?.entries {
-            // Developer & Libraries
-            storageActivity = "Calculating Developer & Libraries..."
-            let devNames: Set = ["Library", ".local", ".cargo", ".rustup", ".npm", ".cache", ".gradle", ".m2"]
-            let devSize = entries.filter { devNames.contains($0.name) }.reduce(Int64(0)) { $0 + $1.size }
-            if devSize > 0 {
-                storageCategories.append(StorageCategory(name: "Developer & Libraries", size: devSize, color: "purple", icon: "hammer.fill"))
-                storageCategories.sort { $0.size > $1.size }
+        for target in targets {
+            storageActivity = "Analyzing \(target.name)..."
+            var totalSize: Int64 = 0
+
+            for path in target.paths {
+                guard FileManager.default.fileExists(atPath: path) else { continue }
+                if let analysis = try? await bridge.analyze(path: path) {
+                    totalSize += analysis.entries.reduce(Int64(0)) { $0 + $1.size }
+
+                    // Collect large files from each scan
+                    let bigFiles = analysis.entries.filter { !$0.isDir && $0.size > 100_000_000 }
+                    largeFiles.append(contentsOf: bigFiles)
+                    largeFiles.sort { $0.size > $1.size }
+                    if largeFiles.count > 20 { largeFiles = Array(largeFiles.prefix(20)) }
+                }
             }
 
-            // Documents + Desktop
-            storageActivity = "Calculating Documents..."
-            let docsSize = entries.filter { $0.name == "Documents" || $0.name == "Desktop" }.reduce(Int64(0)) { $0 + $1.size }
-            if docsSize > 0 {
-                storageCategories.append(StorageCategory(name: "Documents", size: docsSize, color: "orange", icon: "doc.fill"))
+            if totalSize > 0 {
+                storageCategories.append(StorageCategory(name: target.name, size: totalSize, color: target.color, icon: target.icon))
                 storageCategories.sort { $0.size > $1.size }
             }
-
-            // Downloads
-            storageActivity = "Calculating Downloads..."
-            let downloadsSize = entries.first(where: { $0.name == "Downloads" })?.size ?? 0
-            if downloadsSize > 0 {
-                storageCategories.append(StorageCategory(name: "Downloads", size: downloadsSize, color: "cyan", icon: "arrow.down.circle.fill"))
-                storageCategories.sort { $0.size > $1.size }
-            }
-
-            // Media
-            storageActivity = "Calculating Media..."
-            let mediaSize = entries.filter { $0.name == "Movies" || $0.name == "Music" || $0.name == "Pictures" }.reduce(Int64(0)) { $0 + $1.size }
-            if mediaSize > 0 {
-                storageCategories.append(StorageCategory(name: "Media", size: mediaSize, color: "pink", icon: "photo.fill"))
-                storageCategories.sort { $0.size > $1.size }
-            }
-
-            // Projects
-            storageActivity = "Calculating Projects..."
-            let projNames: Set = ["Projects", "Developer", "GitHub", "dev", "repos"]
-            let projectsSize = entries.filter { projNames.contains($0.name) }.reduce(Int64(0)) { $0 + $1.size }
-            if projectsSize > 0 {
-                storageCategories.append(StorageCategory(name: "Projects", size: projectsSize, color: "green", icon: "folder.fill"))
-                storageCategories.sort { $0.size > $1.size }
-            }
-
-            // Large files
-            storageActivity = "Finding large files..."
-            largeFiles = entries.filter { !$0.isDir && $0.size > 100_000_000 }
-                .sorted { $0.size > $1.size }
-                .prefix(20)
-                .map { $0 }
         }
 
         isLoadingStorage = false

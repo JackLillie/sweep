@@ -447,6 +447,12 @@ struct StorageView: View {
                             .font(.system(size: 12, design: .monospaced))
                             .foregroundStyle(.secondary)
 
+                        if entry.isDir {
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 10))
+                                .foregroundStyle(.tertiary)
+                        }
+
                         Button {
                             NSWorkspace.shared.selectFile(entry.path, inFileViewerRootedAtPath: "")
                         } label: {
@@ -458,12 +464,23 @@ struct StorageView: View {
                         .help("Reveal in Finder")
                     }
                     .padding(.vertical, 2)
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        if entry.isDir {
+                            Task { await viewModel.drillDown(path: entry.path) }
+                        }
+                    }
+                    .onHover { hovering in
+                        if entry.isDir {
+                            if hovering { NSCursor.pointingHand.push() } else { NSCursor.pop() }
+                        }
+                    }
                     .contextMenu {
                         Button("Reveal in Finder") {
                             NSWorkspace.shared.selectFile(entry.path, inFileViewerRootedAtPath: "")
                         }
                         if entry.isDir {
-                            Button("Analyze") {
+                            Button("Open") {
                                 Task { await viewModel.drillDown(path: entry.path) }
                             }
                         }
