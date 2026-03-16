@@ -103,14 +103,20 @@ final class AppViewModel: ObservableObject {
         isScanning = false
     }
 
+    @Published var cleanActivity = ""
+
     func runClean() async {
         isCleaning = true
+        cleanActivity = "Starting clean..."
         do {
-            let result = try await bridge.runClean()
+            let result = try await bridge.runCleanStreaming { [weak self] activity in
+                Task { @MainActor in
+                    self?.cleanActivity = activity
+                }
+            }
             cleanResult = result
             cleanSections = []
             cleanSummary = CleanSummary()
-            // Refresh system info to show updated disk space
             await loadSystemInfo()
         } catch {
             actionError = error.localizedDescription

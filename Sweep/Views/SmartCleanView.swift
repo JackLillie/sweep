@@ -12,12 +12,22 @@ struct SmartCleanView: View {
             } else if viewModel.isScanning {
                 scanningView
             } else if viewModel.isCleaning {
-                VStack(spacing: 12) {
+                VStack(spacing: 16) {
+                    Spacer()
+
                     ProgressView()
                         .scaleEffect(0.8)
-                    Text("Cleaning...")
-                        .font(.system(size: 13))
+
+                    Text("Cleaning your Mac...")
+                        .font(.system(size: 15, weight: .medium))
+
+                    Text(viewModel.cleanActivity)
+                        .font(.system(size: 12))
                         .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .frame(maxWidth: 400)
+
+                    Spacer()
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if viewModel.cleanResult != nil {

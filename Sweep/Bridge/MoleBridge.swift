@@ -360,6 +360,75 @@ actor MoleBridge {
         try await runMoleText("clean", timeout: 300, feedStdin: true)
     }
 
+    func runCleanStreaming(onActivity: @escaping @Sendable (String) -> Void) async throws -> String {
+        guard let path = molePath else { throw MoleBridgeError.moleNotInstalled }
+
+        let process = Process()
+        let stdoutPipe = Pipe()
+        let stdinPipe = Pipe()
+
+        process.executableURL = URL(fileURLWithPath: path)
+        process.arguments = ["clean"]
+        process.standardOutput = stdoutPipe
+        process.standardError = Pipe()
+        process.standardInput = stdinPipe
+
+        DispatchQueue.global().async {
+            let newline = Data("\n".utf8)
+            for _ in 0..<600 {
+                stdinPipe.fileHandleForWriting.write(newline)
+                Thread.sleep(forTimeInterval: 0.5)
+            }
+            stdinPipe.fileHandleForWriting.closeFile()
+        }
+
+        try process.run()
+
+        var buffer = ""
+        var lastActivity = ""
+        let handle = stdoutPipe.fileHandleForReading
+
+        while process.isRunning || handle.availableData.count > 0 {
+            let data = handle.availableData
+            if data.isEmpty { break }
+
+            guard let chunk = String(data: data, encoding: .utf8) else { continue }
+            buffer += chunk
+
+            while let newlineRange = buffer.range(of: "\n") {
+                let rawLine = String(buffer[buffer.startIndex..<newlineRange.lowerBound])
+                buffer = String(buffer[newlineRange.upperBound...])
+
+                let line = stripANSI(rawLine).trimmingCharacters(in: .whitespaces)
+                if line.isEmpty { continue }
+
+                // Section headers
+                if line.hasPrefix("➤") {
+                    let name = line.dropFirst(1).trimmingCharacters(in: .whitespaces)
+                    lastActivity = "Cleaning \(name)..."
+                    onActivity(lastActivity)
+                }
+
+                // Completed items
+                if line.hasPrefix("✓") {
+                    let detail = line.dropFirst(1).trimmingCharacters(in: .whitespaces)
+                    if !detail.isEmpty {
+                        lastActivity = detail
+                        onActivity(lastActivity)
+                    }
+                }
+
+                // Summary line
+                if line.contains("Space freed:") {
+                    onActivity(line)
+                }
+            }
+        }
+
+        process.waitUntilExit()
+        return stripANSI(buffer)
+    }
+
     private func parseDryRunOutput(_ output: String) -> ([CleanSection], CleanSummary) {
         var sections: [CleanSection] = []
         var currentSection: CleanSection?
