@@ -76,6 +76,32 @@ final class AppViewModel: ObservableObject {
         isScanning = false
     }
 
+    @Published var actionError: String?
+
+    func emptyTrash() async {
+        do {
+            try await bridge.emptyTrash()
+        } catch {
+            actionError = error.localizedDescription
+        }
+    }
+
+    func flushDNS() async {
+        do {
+            try await bridge.flushDNS()
+        } catch {
+            actionError = error.localizedDescription
+        }
+    }
+
+    func freeMemory() async {
+        do {
+            try await bridge.freeMemory()
+        } catch {
+            actionError = error.localizedDescription
+        }
+    }
+
     var totalCleanableSize: Int64 {
         cleanableItems.filter(\.isSelected).reduce(0) { $0 + $1.size }
     }

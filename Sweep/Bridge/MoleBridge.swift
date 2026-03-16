@@ -165,6 +165,43 @@ actor MoleBridge {
         try await runMoleText("clean")
     }
 
+    // MARK: - Quick Actions
+
+    func emptyTrash() async throws {
+        let trashPath = NSHomeDirectory() + "/.Trash"
+        let fm = FileManager.default
+        guard let contents = try? fm.contentsOfDirectory(atPath: trashPath) else { return }
+        for item in contents {
+            try fm.removeItem(atPath: trashPath + "/" + item)
+        }
+    }
+
+    func flushDNS() async throws {
+        let script = """
+        do shell script "dscacheutil -flushcache && killall -HUP mDNSResponder" with administrator privileges
+        """
+        try runAppleScript(script)
+    }
+
+    func freeMemory() async throws {
+        let script = """
+        do shell script "sudo purge" with administrator privileges
+        """
+        try runAppleScript(script)
+    }
+
+    private func runAppleScript(_ source: String) throws {
+        guard let script = NSAppleScript(source: source) else {
+            throw MoleBridgeError.commandFailed(exitCode: -1, stderr: "Failed to create AppleScript")
+        }
+        var error: NSDictionary?
+        script.executeAndReturnError(&error)
+        if let error {
+            let message = error[NSAppleScript.errorMessage] as? String ?? "AppleScript error"
+            throw MoleBridgeError.commandFailed(exitCode: -1, stderr: message)
+        }
+    }
+
     // MARK: - Scanning
 
     func scanForCleanables() -> [CleanableItem] {
