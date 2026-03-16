@@ -12,8 +12,6 @@ struct OnboardingView: View {
 
             if step == 0 {
                 welcomeStep
-            } else if step == 1 {
-                moleStep
             } else {
                 fdaStep
             }
@@ -22,11 +20,12 @@ struct OnboardingView: View {
 
             // Progress dots
             HStack(spacing: 8) {
-                ForEach(0..<3) { i in
-                    Circle()
-                        .fill(i == step ? Color.accentColor : Color.primary.opacity(0.15))
-                        .frame(width: 7, height: 7)
-                }
+                Circle()
+                    .fill(step == 0 ? Color.accentColor : Color.primary.opacity(0.15))
+                    .frame(width: 7, height: 7)
+                Circle()
+                    .fill(step >= 2 ? Color.accentColor : Color.primary.opacity(0.15))
+                    .frame(width: 7, height: 7)
             }
             .padding(.bottom, 24)
         }
@@ -61,7 +60,7 @@ struct OnboardingView: View {
             }
 
             Button {
-                withAnimation { step = 1 }
+                withAnimation { step = 2 }
             } label: {
                 Text("Get Started")
                     .frame(minWidth: 120)
