@@ -5,30 +5,41 @@ struct ContentView: View {
     @StateObject private var viewModel = AppViewModel()
 
     var body: some View {
-        NavigationSplitView {
-            SidebarView(selection: $selectedItem)
-        } detail: {
-            Group {
-                switch selectedItem {
-                case .overview:
-                    OverviewView(viewModel: viewModel)
-                case .smartClean:
-                    SmartCleanView(viewModel: viewModel)
-                case .applications:
-                    ApplicationsView(viewModel: viewModel)
-                case .storage:
-                    StorageView(viewModel: viewModel)
-                case .permissions:
-                    PermissionsView(viewModel: viewModel)
-                case nil:
-                    OverviewView(viewModel: viewModel)
+        Group {
+            if viewModel.moleAvailable {
+                NavigationSplitView {
+                    SidebarView(selection: $selectedItem)
+                } detail: {
+                    Group {
+                        switch selectedItem {
+                        case .overview:
+                            OverviewView(viewModel: viewModel)
+                        case .smartClean:
+                            SmartCleanView(viewModel: viewModel)
+                        case .applications:
+                            ApplicationsView(viewModel: viewModel)
+                        case .storage:
+                            StorageView(viewModel: viewModel)
+                        case .permissions:
+                            PermissionsView(viewModel: viewModel)
+                        case nil:
+                            OverviewView(viewModel: viewModel)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+                .navigationSplitViewColumnWidth(min: 200, ideal: 220, max: 260)
+            } else {
+                MoleNotFoundView {
+                    Task { await viewModel.recheckMole() }
                 }
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .navigationSplitViewColumnWidth(min: 200, ideal: 220, max: 260)
         .task {
-            await viewModel.loadSystemInfo()
+            await viewModel.checkMoleAvailability()
+            if viewModel.moleAvailable {
+                await viewModel.loadSystemInfo()
+            }
         }
     }
 }
@@ -39,8 +50,17 @@ final class AppViewModel: ObservableObject {
     @Published var cleanableItems: [CleanableItem] = []
     @Published var isScanning = false
     @Published var isLoading = true
+    @Published var moleAvailable = true
 
     private let bridge = MoleBridge()
+
+    func checkMoleAvailability() async {
+        moleAvailable = await bridge.isAvailable
+    }
+
+    func recheckMole() async {
+        moleAvailable = await bridge.recheckAvailability()
+    }
 
     func loadSystemInfo() async {
         isLoading = true

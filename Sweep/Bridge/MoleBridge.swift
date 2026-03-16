@@ -62,6 +62,11 @@ actor MoleBridge {
         molePath != nil
     }
 
+    func recheckAvailability() -> Bool {
+        molePath = findMoleBinary()
+        return isAvailable
+    }
+
     // MARK: - Core Runners
 
     func runMoleJSON<T: Decodable>(_ command: String, arguments: [String] = []) async throws -> T {
