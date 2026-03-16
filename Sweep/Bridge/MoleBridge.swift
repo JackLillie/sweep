@@ -150,7 +150,7 @@ actor MoleBridge {
     // MARK: - Convenience Commands
 
     func fetchStatus() async -> MoleStatus {
-        (try? await runMoleJSON("status") as MoleStatus) ?? MoleStatus()
+        (try? await runMoleJSON("status", arguments: ["--json"]) as MoleStatus) ?? MoleStatus()
     }
 
     func analyze(path: String) async throws -> MoleAnalysis {

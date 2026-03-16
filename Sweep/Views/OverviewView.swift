@@ -13,9 +13,12 @@ struct OverviewView: View {
                 infoRows
                 quickActions
             }
-            .padding(24)
+            .padding(.horizontal, 24)
+            .padding(.top, 4)
+            .padding(.bottom, 24)
         }
         .background(Color(nsColor: .windowBackgroundColor))
+        .scrollContentBackground(.hidden)
         .onAppear { startRefresh() }
         .onDisappear { stopRefresh() }
         .alert("Action Failed", isPresented: showingError, presenting: viewModel.actionError) { _ in
@@ -36,24 +39,18 @@ struct OverviewView: View {
 
     private var header: some View {
         HStack {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Welcome back")
-                    .font(.system(size: 28, weight: .bold))
-                Text(viewModel.systemInfo.hostname)
-                    .font(.system(size: 15))
-                    .foregroundStyle(.secondary)
-            }
+            Text(viewModel.systemInfo.hostname.isEmpty ? "My Mac" : viewModel.systemInfo.hostname)
+                .font(.system(size: 20, weight: .semibold))
             Spacer()
             VStack(alignment: .trailing, spacing: 2) {
                 Text(viewModel.systemInfo.osVersion)
-                    .font(.system(size: 13))
+                    .font(.system(size: 12))
                     .foregroundStyle(.secondary)
                 Text(viewModel.systemInfo.macModel)
-                    .font(.system(size: 12))
+                    .font(.system(size: 11))
                     .foregroundStyle(.tertiary)
             }
         }
-        .padding(.bottom, 4)
     }
 
     // MARK: - Health Score
@@ -311,11 +308,11 @@ struct GaugeCard: View {
                 .gaugeStyle(.accessoryCircular)
                 .tint(color)
                 .scaleEffect(1.4)
+                .padding(.top, 10)
 
                 Text(subtitle)
                     .font(.system(size: 11))
                     .foregroundStyle(.secondary)
-                    .padding(.top, 4)
             }
             .padding(.vertical, 8)
             .frame(maxWidth: .infinity)
