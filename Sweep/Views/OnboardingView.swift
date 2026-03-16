@@ -4,7 +4,7 @@ struct OnboardingView: View {
     @Binding var hasCompletedOnboarding: Bool
     @State private var hasFullDiskAccess = false
     @State private var hasMole = false
-    @State private var step = 0
+    @AppStorage("onboardingStep") private var step = 0
 
     var body: some View {
         VStack(spacing: 0) {
