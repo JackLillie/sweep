@@ -116,65 +116,61 @@ struct OverviewView: View {
     // MARK: - Stats Grid
 
     private var statsGrid: some View {
-        let columns = [
-            GridItem(.flexible(), spacing: 12),
-            GridItem(.flexible(), spacing: 12),
-            GridItem(.flexible(), spacing: 12),
-        ]
-
-        return LazyVGrid(columns: columns, spacing: 12) {
-            // Row 1: Gauges
-            GaugeCard(
-                title: "CPU",
-                value: viewModel.systemInfo.cpuUsage,
-                subtitle: "\(Int(viewModel.systemInfo.cpuUsage * 100))% used",
-                color: gaugeColor(viewModel.systemInfo.cpuUsage)
-            )
-
-            GaugeCard(
-                title: "Memory",
-                value: viewModel.systemInfo.memoryPercentage,
-                subtitle: String(format: "%.1f / %.0f GB", viewModel.systemInfo.memoryUsed, viewModel.systemInfo.memoryTotal),
-                color: gaugeColor(viewModel.systemInfo.memoryPercentage)
-            )
-
-            GaugeCard(
-                title: "Storage",
-                value: viewModel.systemInfo.diskPercentage,
-                subtitle: String(format: "%.0f GB free", viewModel.systemInfo.diskFree),
-                color: gaugeColor(viewModel.systemInfo.diskPercentage)
-            )
-
-            // Row 2: Info cards
-            InfoCard(
-                icon: "clock.fill",
-                iconColor: .blue,
-                title: "Uptime",
-                value: uptimeString
-            )
-
-            InfoCard(
-                icon: "arrow.up.arrow.down",
-                iconColor: .teal,
-                title: "Network",
-                value: String(format: "↓%.1f ↑%.1f MB/s", viewModel.systemInfo.networkDown, viewModel.systemInfo.networkUp)
-            )
-
-            if viewModel.systemInfo.hasBattery {
-                InfoCard(
-                    icon: batteryIcon,
-                    iconColor: batteryColor,
-                    title: "Battery",
-                    value: "\(Int(viewModel.systemInfo.batteryPercent))%",
-                    subtitle: viewModel.systemInfo.batteryStatus
+        Grid(horizontalSpacing: 12, verticalSpacing: 12) {
+            GridRow {
+                GaugeCard(
+                    title: "CPU",
+                    value: viewModel.systemInfo.cpuUsage,
+                    subtitle: "\(Int(viewModel.systemInfo.cpuUsage * 100))% used",
+                    color: gaugeColor(viewModel.systemInfo.cpuUsage)
                 )
-            } else {
-                InfoCard(
-                    icon: "thermometer.medium",
-                    iconColor: .orange,
-                    title: "CPU Temp",
-                    value: String(format: "%.0f°C", viewModel.systemInfo.cpuTemp)
+
+                GaugeCard(
+                    title: "Memory",
+                    value: viewModel.systemInfo.memoryPercentage,
+                    subtitle: String(format: "%.1f / %.0f GB", viewModel.systemInfo.memoryUsed, viewModel.systemInfo.memoryTotal),
+                    color: gaugeColor(viewModel.systemInfo.memoryPercentage)
                 )
+
+                GaugeCard(
+                    title: "Storage",
+                    value: viewModel.systemInfo.diskPercentage,
+                    subtitle: String(format: "%.0f GB free", viewModel.systemInfo.diskFree),
+                    color: gaugeColor(viewModel.systemInfo.diskPercentage)
+                )
+            }
+
+            GridRow {
+                InfoCard(
+                    icon: "clock.fill",
+                    iconColor: .blue,
+                    title: "Uptime",
+                    value: uptimeString
+                )
+
+                InfoCard(
+                    icon: "arrow.up.arrow.down",
+                    iconColor: .teal,
+                    title: "Network",
+                    value: String(format: "↓%.1f ↑%.1f MB/s", viewModel.systemInfo.networkDown, viewModel.systemInfo.networkUp)
+                )
+
+                if viewModel.systemInfo.hasBattery {
+                    InfoCard(
+                        icon: batteryIcon,
+                        iconColor: batteryColor,
+                        title: "Battery",
+                        value: "\(Int(viewModel.systemInfo.batteryPercent))%",
+                        subtitle: viewModel.systemInfo.batteryStatus
+                    )
+                } else {
+                    InfoCard(
+                        icon: "thermometer.medium",
+                        iconColor: .orange,
+                        title: "CPU Temp",
+                        value: String(format: "%.0f°C", viewModel.systemInfo.cpuTemp)
+                    )
+                }
             }
         }
     }
@@ -239,7 +235,13 @@ struct GaugeCard: View {
 
     var body: some View {
         GroupBox {
-            VStack(spacing: 8) {
+            VStack(spacing: 6) {
+                Text(title)
+                    .font(.system(size: 13, weight: .semibold))
+                    .frame(maxWidth: .infinity)
+
+                Spacer(minLength: 8)
+
                 Gauge(value: value) {
                     EmptyView()
                 } currentValueLabel: {
@@ -250,17 +252,15 @@ struct GaugeCard: View {
                 .gaugeStyle(.accessoryCircular)
                 .tint(color)
                 .scaleEffect(1.3)
-                .padding(.top, 8)
 
-                Text(title)
-                    .font(.system(size: 12, weight: .semibold))
+                Spacer(minLength: 0)
 
                 Text(subtitle)
                     .font(.system(size: 11))
                     .foregroundStyle(.secondary)
             }
             .padding(.vertical, 6)
-            .frame(maxWidth: .infinity)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
     }
 }
@@ -276,26 +276,33 @@ struct InfoCard: View {
 
     var body: some View {
         GroupBox {
-            VStack(spacing: 8) {
+            VStack(spacing: 6) {
+                Text(title)
+                    .font(.system(size: 13, weight: .semibold))
+                    .frame(maxWidth: .infinity)
+
+                Spacer(minLength: 0)
+
                 Image(systemName: icon)
                     .font(.system(size: 28))
                     .foregroundStyle(iconColor)
                     .frame(height: 36)
-                    .padding(.top, 8)
 
-                Text(value)
-                    .font(.system(size: 16, weight: .bold, design: .rounded))
+                Spacer(minLength: 0)
 
-                Text(title)
-                    .font(.system(size: 12, weight: .semibold))
+                HStack(alignment: .lastTextBaseline, spacing: 4) {
+                    Text(value)
+                        .font(.system(size: 16, weight: .bold, design: .rounded))
 
-                Text(subtitle.isEmpty ? " " : subtitle)
-                    .font(.system(size: 11))
-                    .foregroundStyle(.secondary)
-                    .opacity(subtitle.isEmpty ? 0 : 1)
+                    if !subtitle.isEmpty {
+                        Text(subtitle)
+                            .font(.system(size: 11))
+                            .foregroundStyle(.secondary)
+                    }
+                }
             }
             .padding(.vertical, 6)
-            .frame(maxWidth: .infinity)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
     }
 }
