@@ -57,30 +57,32 @@ struct SmartCleanView: View {
             .padding(.bottom, 24)
         }
         .safeAreaInset(edge: .top, spacing: 0) {
-            VStack(spacing: 0) {
+            GroupBox {
                 HStack(spacing: 12) {
                     ProgressView()
-                        .scaleEffect(0.6)
-                        .frame(width: 16, height: 16)
+                        .scaleEffect(0.7)
+                        .frame(width: 20, height: 20)
 
-                    Text(viewModel.scanActivity)
-                        .font(.system(size: 12, weight: .medium))
-                        .lineLimit(1)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(viewModel.scanActivity)
+                            .font(.system(size: 13, weight: .medium))
+                            .lineLimit(1)
 
-                    Spacer()
-
-                    if viewModel.totalCleanableSize > 0 {
-                        Text(viewModel.formattedCleanableSize)
-                            .font(.system(size: 12, weight: .semibold, design: .monospaced))
-                            .foregroundStyle(.purple)
+                        if viewModel.totalCleanableSize > 0 {
+                            Text("\(viewModel.formattedCleanableSize) found so far")
+                                .font(.system(size: 12, design: .monospaced))
+                                .foregroundStyle(.purple)
+                        }
                     }
+                    Spacer()
                 }
-                .padding(.horizontal, 24)
-                .padding(.vertical, 10)
-
-                Divider()
+                .padding(.vertical, 4)
+                .padding(.horizontal, 4)
             }
-            .background(.bar)
+            .padding(.horizontal, 24)
+            .padding(.top, 4)
+            .padding(.bottom, 8)
+            .background(Color(nsColor: .windowBackgroundColor))
         }
     }
 
