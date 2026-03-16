@@ -20,8 +20,7 @@ struct OverviewView: View {
                     VStack(spacing: 16) {
                         header
                         healthBadge
-                        gaugesRow
-                        infoRows
+                        statsGrid
                     }
                     .padding(.horizontal, 24)
                     .padding(.bottom, 24)
@@ -114,10 +113,17 @@ struct OverviewView: View {
         return msg
     }
 
-    // MARK: - Gauges
+    // MARK: - Stats Grid
 
-    private var gaugesRow: some View {
-        HStack(spacing: 16) {
+    private var statsGrid: some View {
+        let columns = [
+            GridItem(.flexible(), spacing: 12),
+            GridItem(.flexible(), spacing: 12),
+            GridItem(.flexible(), spacing: 12),
+        ]
+
+        return LazyVGrid(columns: columns, spacing: 12) {
+            // Row 1: Gauges
             GaugeCard(
                 title: "CPU",
                 value: viewModel.systemInfo.cpuUsage,
@@ -138,77 +144,37 @@ struct OverviewView: View {
                 subtitle: String(format: "%.0f GB free", viewModel.systemInfo.diskFree),
                 color: gaugeColor(viewModel.systemInfo.diskPercentage)
             )
-        }
-    }
 
-    // MARK: - Info Rows
+            // Row 2: Info cards
+            InfoCard(
+                icon: "clock.fill",
+                iconColor: .blue,
+                title: "Uptime",
+                value: uptimeString
+            )
 
-    private var infoRows: some View {
-        VStack(spacing: 8) {
-            GroupBox {
-                HStack {
-                    Label {
-                        Text("System Uptime")
-                            .font(.system(size: 13, weight: .medium))
-                    } icon: {
-                        Image(systemName: "clock.fill")
-                            .foregroundStyle(.blue)
-                    }
-                    Spacer()
-                    Text(uptimeString)
-                        .font(.system(size: 13, design: .monospaced))
-                        .foregroundStyle(.secondary)
-                }
-                .padding(.vertical, 2)
-                .padding(.horizontal, 4)
-            }
-
-            GroupBox {
-                HStack {
-                    Label {
-                        Text("Network")
-                            .font(.system(size: 13, weight: .medium))
-                    } icon: {
-                        Image(systemName: "arrow.up.arrow.down")
-                            .foregroundStyle(.teal)
-                    }
-                    Spacer()
-                    HStack(spacing: 12) {
-                        Label(String(format: "%.2f MB/s", viewModel.systemInfo.networkDown), systemImage: "arrow.down")
-                        Label(String(format: "%.2f MB/s", viewModel.systemInfo.networkUp), systemImage: "arrow.up")
-                    }
-                    .font(.system(size: 12, design: .monospaced))
-                    .foregroundStyle(.secondary)
-                }
-                .padding(.vertical, 2)
-                .padding(.horizontal, 4)
-            }
+            InfoCard(
+                icon: "arrow.up.arrow.down",
+                iconColor: .teal,
+                title: "Network",
+                value: String(format: "↓%.1f ↑%.1f MB/s", viewModel.systemInfo.networkDown, viewModel.systemInfo.networkUp)
+            )
 
             if viewModel.systemInfo.hasBattery {
-                GroupBox {
-                    HStack {
-                        Label {
-                            Text("Battery")
-                                .font(.system(size: 13, weight: .medium))
-                        } icon: {
-                            Image(systemName: batteryIcon)
-                                .foregroundStyle(batteryColor)
-                        }
-                        Spacer()
-                        HStack(spacing: 8) {
-                            Text("\(Int(viewModel.systemInfo.batteryPercent))%")
-                                .font(.system(size: 13, design: .monospaced))
-                            if !viewModel.systemInfo.batteryStatus.isEmpty {
-                                Text(viewModel.systemInfo.batteryStatus)
-                                    .font(.system(size: 11))
-                                    .foregroundStyle(.tertiary)
-                            }
-                        }
-                        .foregroundStyle(.secondary)
-                    }
-                    .padding(.vertical, 2)
-                    .padding(.horizontal, 4)
-                }
+                InfoCard(
+                    icon: batteryIcon,
+                    iconColor: batteryColor,
+                    title: "Battery",
+                    value: "\(Int(viewModel.systemInfo.batteryPercent))%",
+                    subtitle: viewModel.systemInfo.batteryStatus
+                )
+            } else {
+                InfoCard(
+                    icon: "thermometer.medium",
+                    iconColor: .orange,
+                    title: "CPU Temp",
+                    value: String(format: "%.0f°C", viewModel.systemInfo.cpuTemp)
+                )
             }
         }
     }
@@ -292,6 +258,44 @@ struct GaugeCard: View {
                 Text(subtitle)
                     .font(.system(size: 11))
                     .foregroundStyle(.secondary)
+            }
+            .padding(.vertical, 6)
+            .frame(maxWidth: .infinity)
+        }
+    }
+}
+
+// MARK: - Info Card
+
+struct InfoCard: View {
+    let icon: String
+    let iconColor: Color
+    let title: String
+    let value: String
+    var subtitle: String = ""
+
+    var body: some View {
+        GroupBox {
+            VStack(spacing: 6) {
+                Image(systemName: icon)
+                    .font(.system(size: 18))
+                    .foregroundStyle(iconColor)
+                    .padding(.top, 4)
+
+                Text(value)
+                    .font(.system(size: 16, weight: .bold, design: .rounded))
+
+                Text(title)
+                    .font(.system(size: 12, weight: .semibold))
+
+                if !subtitle.isEmpty {
+                    Text(subtitle)
+                        .font(.system(size: 10))
+                        .foregroundStyle(.secondary)
+                } else {
+                    Text(" ")
+                        .font(.system(size: 10))
+                }
             }
             .padding(.vertical, 6)
             .frame(maxWidth: .infinity)
