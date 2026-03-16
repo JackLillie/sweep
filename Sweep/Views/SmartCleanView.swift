@@ -5,7 +5,6 @@ struct SmartCleanView: View {
     @State private var hasScanned = false
     @State private var showCleanConfirm = false
     @State private var hasFullDiskAccess = false
-    @State private var hasAutomationAccess = false
     @State private var checkedPermissions = false
 
     var body: some View {
@@ -54,80 +53,40 @@ struct SmartCleanView: View {
     // MARK: - Scanning (Live)
 
     private var scanningView: some View {
-        VStack(spacing: 0) {
-            ScrollView {
-                VStack(spacing: 16) {
-                    // Live header
-                    GroupBox {
-                        HStack(spacing: 12) {
-                            ProgressView()
-                                .scaleEffect(0.7)
-                                .frame(width: 20, height: 20)
+        ScrollView {
+            VStack(spacing: 16) {
+                ForEach(viewModel.cleanSections) { section in
+                    LiveScanSectionCard(section: section)
+                }
+            }
+            .padding(.horizontal, 24)
+            .padding(.bottom, 24)
+        }
+        .safeAreaInset(edge: .top, spacing: 0) {
+            VStack(spacing: 0) {
+                HStack(spacing: 12) {
+                    ProgressView()
+                        .scaleEffect(0.6)
+                        .frame(width: 16, height: 16)
 
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(viewModel.scanActivity)
-                                    .font(.system(size: 13, weight: .medium))
-                                    .lineLimit(1)
+                    Text(viewModel.scanActivity)
+                        .font(.system(size: 12, weight: .medium))
+                        .lineLimit(1)
 
-                                if viewModel.totalCleanableSize > 0 {
-                                    Text("\(viewModel.formattedCleanableSize) found so far")
-                                        .font(.system(size: 12))
-                                        .foregroundStyle(.secondary)
-                                }
-                            }
-                            Spacer()
-                        }
-                        .padding(.vertical, 4)
-                        .padding(.horizontal, 4)
-                    }
+                    Spacer()
 
-                    // Live sections appearing
-                    ForEach(viewModel.cleanSections) { section in
-                        GroupBox {
-                            VStack(alignment: .leading, spacing: 6) {
-                                HStack(spacing: 8) {
-                                    Image(systemName: section.icon)
-                                        .font(.system(size: 12))
-                                        .foregroundStyle(section.color)
-                                        .frame(width: 18)
-
-                                    Text(section.name)
-                                        .font(.system(size: 13, weight: .medium))
-
-                                    Spacer()
-
-                                    Text(section.formattedSize)
-                                        .font(.system(size: 11, design: .monospaced))
-                                        .foregroundStyle(.secondary)
-                                }
-
-                                ForEach(section.items.prefix(5)) { item in
-                                    HStack {
-                                        Text(item.name)
-                                            .font(.system(size: 11))
-                                            .foregroundStyle(.secondary)
-                                            .lineLimit(1)
-                                        Spacer()
-                                        Text(item.formattedSize)
-                                            .font(.system(size: 10, design: .monospaced))
-                                            .foregroundStyle(.tertiary)
-                                    }
-                                }
-
-                                if section.items.count > 5 {
-                                    Text("+\(section.items.count - 5) more")
-                                        .font(.system(size: 10))
-                                        .foregroundStyle(.tertiary)
-                                }
-                            }
-                            .padding(.vertical, 2)
-                            .padding(.horizontal, 4)
-                        }
+                    if viewModel.totalCleanableSize > 0 {
+                        Text(viewModel.formattedCleanableSize)
+                            .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                            .foregroundStyle(.purple)
                     }
                 }
                 .padding(.horizontal, 24)
-                .padding(.bottom, 24)
+                .padding(.vertical, 10)
+
+                Divider()
             }
+            .background(.bar)
         }
     }
 
@@ -151,24 +110,15 @@ struct SmartCleanView: View {
                     .frame(maxWidth: 380)
             }
 
-            VStack(spacing: 8) {
-                permissionRow(
-                    icon: "lock.shield.fill",
-                    title: "Full Disk Access",
-                    granted: hasFullDiskAccess,
-                    settingsURL: "x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles"
-                )
-
-                permissionRow(
-                    icon: "gearshape.2.fill",
-                    title: "Automation (Finder)",
-                    granted: hasAutomationAccess,
-                    settingsURL: "x-apple.systempreferences:com.apple.preference.security?Privacy_Automation"
-                )
-            }
+            permissionRow(
+                icon: "lock.shield.fill",
+                title: "Full Disk Access",
+                granted: hasFullDiskAccess,
+                settingsURL: "x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles"
+            )
             .frame(maxWidth: 400)
 
-            if hasFullDiskAccess && hasAutomationAccess {
+            if hasFullDiskAccess {
                 Button {
                     checkedPermissions = true
                     hasScanned = true
@@ -180,7 +130,7 @@ struct SmartCleanView: View {
                 .controlSize(.large)
                 .buttonStyle(.borderedProminent)
             } else {
-                Text("Grant the permissions above in System Settings, then come back here.")
+                Text("Grant Full Disk Access in System Settings, then come back here.")
                     .font(.system(size: 11))
                     .foregroundStyle(.tertiary)
                     .multilineTextAlignment(.center)
@@ -199,14 +149,6 @@ struct SmartCleanView: View {
     private func checkFDA() {
         let tccPath = "/Library/Application Support/com.apple.TCC/TCC.db"
         hasFullDiskAccess = FileManager.default.isReadableFile(atPath: tccPath)
-        checkAutomation()
-    }
-
-    private func checkAutomation() {
-        let script = NSAppleScript(source: "tell application \"Finder\" to get name of startup disk")
-        var error: NSDictionary?
-        script?.executeAndReturnError(&error)
-        hasAutomationAccess = (error == nil)
     }
 
     private func permissionRow(icon: String, title: String, granted: Bool, settingsURL: String) -> some View {
@@ -469,6 +411,74 @@ struct CleanSectionView: View {
                 }
             }
             .padding(.vertical, 4)
+            .padding(.horizontal, 4)
+        }
+    }
+}
+
+// MARK: - Live Scan Section Card
+
+struct LiveScanSectionCard: View {
+    let section: CleanSection
+    @State private var isExpanded = false
+
+    private let previewCount = 3
+
+    var body: some View {
+        GroupBox {
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(spacing: 8) {
+                    Image(systemName: section.icon)
+                        .font(.system(size: 12))
+                        .foregroundStyle(section.color)
+                        .frame(width: 18)
+
+                    Text(section.name)
+                        .font(.system(size: 13, weight: .medium))
+
+                    Spacer()
+
+                    Text("\(section.items.count) items")
+                        .font(.system(size: 10))
+                        .foregroundStyle(.tertiary)
+
+                    Text(section.formattedSize)
+                        .font(.system(size: 11, design: .monospaced))
+                        .foregroundStyle(.secondary)
+                }
+
+                let visibleItems = isExpanded ? section.items : Array(section.items.prefix(previewCount))
+
+                ForEach(visibleItems) { item in
+                    HStack {
+                        Text(item.name)
+                            .font(.system(size: 11))
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                        Spacer()
+                        Text(item.formattedSize)
+                            .font(.system(size: 10, design: .monospaced))
+                            .foregroundStyle(.tertiary)
+                    }
+                }
+
+                if section.items.count > previewCount {
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            isExpanded.toggle()
+                        }
+                    } label: {
+                        Text(isExpanded ? "Show less" : "+\(section.items.count - previewCount) more")
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundStyle(.blue)
+                    }
+                    .buttonStyle(.plain)
+                    .onHover { hovering in
+                        if hovering { NSCursor.pointingHand.push() } else { NSCursor.pop() }
+                    }
+                }
+            }
+            .padding(.vertical, 2)
             .padding(.horizontal, 4)
         }
     }

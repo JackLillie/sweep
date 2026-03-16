@@ -19,7 +19,6 @@ struct SidebarView: View {
             }
         }
         .listStyle(.sidebar)
-        .navigationSplitViewColumnWidth(min: 200, ideal: 200, max: 240)
         .safeAreaInset(edge: .bottom, spacing: 0) {
             VStack(spacing: 4) {
                 Divider()

@@ -7,9 +7,12 @@ struct ContentView: View {
     var body: some View {
         Group {
             if viewModel.moleAvailable {
-                NavigationSplitView {
+                HStack(spacing: 0) {
                     SidebarView(selection: $selectedItem)
-                } detail: {
+                        .frame(width: 200)
+
+                    Divider()
+
                     Group {
                         switch selectedItem {
                         case .overview:
@@ -27,7 +30,6 @@ struct ContentView: View {
                         }
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .contentMargins(.top, 0, for: .scrollContent)
                 }
             } else {
                 MoleNotFoundView {

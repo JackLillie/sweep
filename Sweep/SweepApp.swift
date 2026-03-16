@@ -20,7 +20,6 @@ struct SweepApp: App {
                     }
                 }
         }
-        .windowStyle(.titleBar)
         .windowToolbarStyle(.unified(showsTitle: false))
         .defaultSize(width: 900, height: 600)
 
@@ -39,4 +38,5 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
         false
     }
+
 }

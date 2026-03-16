@@ -18,11 +18,9 @@ struct OverviewView: View {
             } else {
                 ScrollView {
                     VStack(spacing: 16) {
-                        header
                         healthBadge
                         gaugesRow
                         infoRows
-                        quickActions
                     }
                     .padding(.horizontal, 24)
                     .padding(.bottom, 24)
@@ -32,7 +30,16 @@ struct OverviewView: View {
         .background(Color(nsColor: .windowBackgroundColor))
         .scrollContentBackground(.hidden)
         .toolbarBackground(.hidden, for: .windowToolbar)
-        .navigationTitle("")
+        .navigationTitle(viewModel.systemInfo.hostname.isEmpty ? "Overview" : viewModel.systemInfo.hostname)
+        .toolbar {
+            ToolbarItem(placement: .automatic) {
+                if !viewModel.isLoading, !viewModel.systemInfo.macModel.isEmpty {
+                    Text("\(viewModel.systemInfo.macModel) · \(viewModel.systemInfo.osVersion)")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
         .onAppear { startRefresh() }
         .onDisappear { stopRefresh() }
         .alert("Action Failed", isPresented: showingError, presenting: viewModel.actionError) { _ in
@@ -232,54 +239,6 @@ struct OverviewView: View {
         return .red
     }
 
-    // MARK: - Quick Actions
-
-    private var quickActions: some View {
-        GroupBox {
-            VStack(alignment: .leading, spacing: 12) {
-                Text("Quick Actions")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(.secondary)
-                    .padding(.leading, 8)
-                    .padding(.top, 4)
-
-                HStack(spacing: 12) {
-                    QuickActionButton(
-                        title: "Smart Clean",
-                        icon: "sparkles",
-                        color: .purple
-                    ) {
-                        Task { await viewModel.scanForCleanables() }
-                    }
-
-                    QuickActionButton(
-                        title: "Empty Trash",
-                        icon: "trash",
-                        color: .red
-                    ) {
-                        Task { await viewModel.emptyTrash() }
-                    }
-
-                    QuickActionButton(
-                        title: "Flush DNS",
-                        icon: "network",
-                        color: .blue
-                    ) {
-                        Task { await viewModel.flushDNS() }
-                    }
-
-                    QuickActionButton(
-                        title: "Free Memory",
-                        icon: "memorychip",
-                        color: .green
-                    ) {
-                        Task { await viewModel.freeMemory() }
-                    }
-                }
-            }
-        }
-    }
-
     // MARK: - Helpers
 
     private var uptimeString: String {
@@ -348,44 +307,3 @@ struct GaugeCard: View {
     }
 }
 
-// MARK: - Quick Action Button
-
-struct QuickActionButton: View {
-    let title: String
-    let icon: String
-    let color: Color
-    let action: () -> Void
-
-    @State private var isHovering = false
-
-    var body: some View {
-        Button(action: action) {
-            VStack(spacing: 8) {
-                Image(systemName: icon)
-                    .font(.system(size: 16))
-                    .foregroundStyle(color)
-                    .frame(width: 40, height: 40)
-                    .background(color.opacity(isHovering ? 0.2 : 0.1), in: RoundedRectangle(cornerRadius: 10))
-
-                Text(title)
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundStyle(isHovering ? .primary : .secondary)
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 10)
-            .background(
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(isHovering ? Color.primary.opacity(0.04) : .clear)
-            )
-        }
-        .buttonStyle(.plain)
-        .onHover { hovering in
-            isHovering = hovering
-            if hovering {
-                NSCursor.pointingHand.push()
-            } else {
-                NSCursor.pop()
-            }
-        }
-    }
-}
