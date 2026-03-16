@@ -10,13 +10,19 @@ struct OnboardingView: View {
         VStack(spacing: 0) {
             Spacer()
 
-            if step == 0 {
-                welcomeStep
-            } else if !hasMole {
-                moleStep
-            } else {
-                fdaStep
+            Group {
+                if step == 0 {
+                    welcomeStep
+                        .id("welcome")
+                } else if !hasMole {
+                    moleStep
+                        .id("mole")
+                } else {
+                    fdaStep
+                        .id("fda")
+                }
             }
+            .transition(.opacity)
 
             Spacer()
 
@@ -31,6 +37,7 @@ struct OnboardingView: View {
             }
             .padding(.bottom, 24)
         }
+        .animation(.easeInOut(duration: 0.3), value: step)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(nsColor: .windowBackgroundColor))
         .onAppear {
@@ -62,7 +69,7 @@ struct OnboardingView: View {
             }
 
             Button {
-                withAnimation { step = 1 }
+                withAnimation(.easeInOut(duration: 0.3)) { step = 1 }
             } label: {
                 Text("Get Started")
                     .frame(minWidth: 120)
@@ -124,7 +131,7 @@ struct OnboardingView: View {
 
             if hasMole {
                 Button {
-                    withAnimation { step = 2 }
+                    withAnimation(.easeInOut(duration: 0.3)) { step = 2 }
                 } label: {
                     Text("Continue")
                         .frame(minWidth: 120)
