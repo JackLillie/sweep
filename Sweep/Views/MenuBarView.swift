@@ -1,10 +1,9 @@
 import SwiftUI
 
 struct MenuBarView: View {
-    @State private var systemInfo = SystemInfo()
-    @State private var isLoading = true
-
-    private let bridge = MoleBridge()
+    @ObservedObject var viewModel: AppViewModel
+    @Environment(\.openWindow) private var openWindow
+    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         VStack(spacing: 0) {
@@ -15,59 +14,73 @@ struct MenuBarView: View {
                 Text("Sweep")
                     .font(.system(size: 13, weight: .semibold))
                 Spacer()
-                Text(systemInfo.osVersion)
-                    .font(.system(size: 11))
-                    .foregroundStyle(.secondary)
+                if !viewModel.systemInfo.osVersion.isEmpty {
+                    Text(viewModel.systemInfo.osVersion)
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+                }
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 10)
 
             Divider()
 
-            // Quick stats
-            VStack(spacing: 8) {
-                MenuBarStatRow(
-                    icon: "cpu",
-                    label: "CPU",
-                    value: "\(Int(systemInfo.cpuUsage * 100))%",
-                    color: .blue
-                )
+            if viewModel.isLoading {
+                VStack(spacing: 8) {
+                    ProgressView()
+                        .scaleEffect(0.6)
+                    Text("Loading...")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 20)
+            } else {
+                // Quick stats
+                VStack(spacing: 8) {
+                    MenuBarStatRow(
+                        icon: "cpu",
+                        label: "CPU",
+                        value: "\(Int(viewModel.systemInfo.cpuUsage * 100))%",
+                        color: .blue
+                    )
 
-                MenuBarStatRow(
-                    icon: "memorychip",
-                    label: "Memory",
-                    value: String(format: "%.1f / %.0f GB", systemInfo.memoryUsed, systemInfo.memoryTotal),
-                    color: .green
-                )
+                    MenuBarStatRow(
+                        icon: "memorychip",
+                        label: "Memory",
+                        value: String(format: "%.1f / %.0f GB", viewModel.systemInfo.memoryUsed, viewModel.systemInfo.memoryTotal),
+                        color: .green
+                    )
 
-                MenuBarStatRow(
-                    icon: "internaldrive",
-                    label: "Disk",
-                    value: String(format: "%.0f GB free", systemInfo.diskFree),
-                    color: .orange
-                )
+                    MenuBarStatRow(
+                        icon: "internaldrive",
+                        label: "Disk",
+                        value: String(format: "%.0f GB free", viewModel.systemInfo.diskFree),
+                        color: .orange
+                    )
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
             }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 10)
 
             Divider()
 
             // Quick actions
             VStack(spacing: 2) {
                 MenuBarActionButton(icon: "sparkles", label: "Smart Clean", color: .purple) {
-                    // TODO: Quick clean
+                    Task { await viewModel.scanForCleanables() }
                 }
 
                 MenuBarActionButton(icon: "trash", label: "Empty Trash", color: .red) {
-                    // TODO: Empty trash
+                    Task { await viewModel.emptyTrash() }
                 }
 
                 MenuBarActionButton(icon: "memorychip", label: "Free Memory", color: .green) {
-                    // TODO: Purge memory
+                    Task { await viewModel.freeMemory() }
                 }
 
                 MenuBarActionButton(icon: "network", label: "Flush DNS Cache", color: .blue) {
-                    // TODO: Flush DNS
+                    Task { await viewModel.flushDNS() }
                 }
             }
             .padding(.horizontal, 6)
@@ -75,56 +88,24 @@ struct MenuBarView: View {
 
             Divider()
 
-            // Open main window
-            Button {
+            MenuBarActionButton(icon: "macwindow", label: "Show Main Window", color: .primary) {
+                dismiss()
+                NSApp.setActivationPolicy(.regular)
                 NSApp.activate(ignoringOtherApps: true)
-                if let window = NSApp.windows.first(where: { $0.title != "Sweep" || $0.isKeyWindow }) {
-                    window.makeKeyAndOrderFront(nil)
-                }
-            } label: {
-                HStack {
-                    Image(systemName: "macwindow")
-                    Text("Open Sweep")
-                    Spacer()
-                    Text("⌘O")
-                        .font(.system(size: 11))
-                        .foregroundStyle(.tertiary)
-                }
-                .font(.system(size: 12))
-                .padding(.horizontal, 8)
-                .padding(.vertical, 6)
+                openWindow(id: "main")
             }
-            .buttonStyle(.plain)
             .padding(.horizontal, 6)
-            .padding(.vertical, 4)
+            .padding(.vertical, 2)
 
             Divider()
 
-            Button {
+            MenuBarActionButton(icon: "power", label: "Quit Sweep", color: .primary) {
                 NSApp.terminate(nil)
-            } label: {
-                HStack {
-                    Image(systemName: "power")
-                    Text("Quit Sweep")
-                    Spacer()
-                    Text("⌘Q")
-                        .font(.system(size: 11))
-                        .foregroundStyle(.tertiary)
-                }
-                .font(.system(size: 12))
-                .padding(.horizontal, 8)
-                .padding(.vertical, 6)
             }
-            .buttonStyle(.plain)
             .padding(.horizontal, 6)
-            .padding(.vertical, 4)
+            .padding(.vertical, 2)
         }
         .frame(width: 280)
-        .task {
-            let status = await bridge.fetchStatus()
-            systemInfo = SystemInfo(from: status)
-            isLoading = false
-        }
     }
 }
 

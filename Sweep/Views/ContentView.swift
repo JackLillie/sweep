@@ -2,7 +2,7 @@ import SwiftUI
 
 struct ContentView: View {
     @State private var selectedItem: NavigationItem? = .overview
-    @StateObject private var viewModel = AppViewModel()
+    @ObservedObject var viewModel: AppViewModel
 
     var body: some View {
         Group {
@@ -29,7 +29,7 @@ struct ContentView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .contentMargins(.top, 0, for: .scrollContent)
                 }
-                .navigationSplitViewColumnWidth(min: 160, ideal: 180, max: 220)
+                .navigationSplitViewColumnWidth(min: 170, ideal: 200, max: 240)
             } else {
                 MoleNotFoundView {
                     Task { await viewModel.recheckMole() }

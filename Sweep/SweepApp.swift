@@ -4,11 +4,21 @@ import SwiftUI
 struct SweepApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @AppStorage("showMenuBarExtra") private var showMenuBarExtra = true
+    @StateObject private var viewModel = AppViewModel()
 
     var body: some Scene {
-        WindowGroup {
-            ContentView()
+        WindowGroup(id: "main") {
+            ContentView(viewModel: viewModel)
                 .frame(minWidth: 780, minHeight: 520)
+                .onDisappear {
+                    // Hide from dock when all windows are closed
+                    DispatchQueue.main.async {
+                        let hasVisible = NSApp.windows.contains { $0.isVisible && $0.canBecomeMain }
+                        if !hasVisible {
+                            NSApp.setActivationPolicy(.accessory)
+                        }
+                    }
+                }
         }
         .windowStyle(.titleBar)
         .windowToolbarStyle(.unified(showsTitle: false))
@@ -19,7 +29,7 @@ struct SweepApp: App {
         }
 
         MenuBarExtra("Sweep", systemImage: "sparkles", isInserted: $showMenuBarExtra) {
-            MenuBarView()
+            MenuBarView(viewModel: viewModel)
         }
         .menuBarExtraStyle(.window)
     }
@@ -27,6 +37,6 @@ struct SweepApp: App {
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
-        true
+        false
     }
 }
