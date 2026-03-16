@@ -48,11 +48,11 @@ struct SmartCleanView: View {
             Button("Clean") {
                 Task { await viewModel.runClean(deepClean: false) }
             }
-            Button("Deep Clean (includes system caches)") {
+            Button("Deep Clean", role: .destructive) {
                 Task { await viewModel.runClean(deepClean: true) }
             }
         } message: {
-            Text("This will permanently remove \(viewModel.formattedCleanableSize) of files. Deep Clean requires your password to clear system caches.")
+            Text("Clean removes \(viewModel.formattedCleanableSize) of user caches, logs, and browser data.\n\nDeep Clean also removes system caches (requires your password) and can free significantly more space.")
         }
     }
 
@@ -288,14 +288,9 @@ struct SmartCleanView: View {
                     // Summary
                     GroupBox {
                         HStack(spacing: 12) {
-                            ZStack {
-                                Circle()
-                                    .fill(Color.purple.opacity(0.15))
-                                    .frame(width: 44, height: 44)
-                                Text(viewModel.cleanSummary.totalSize.isEmpty ? viewModel.formattedCleanableSize : viewModel.cleanSummary.totalSize)
-                                    .font(.system(size: 12, weight: .bold, design: .rounded))
-                                    .foregroundStyle(.purple)
-                            }
+                            Image(systemName: "sparkles")
+                                .font(.system(size: 20))
+                                .foregroundStyle(.purple)
 
                             VStack(alignment: .leading, spacing: 2) {
                                 Text("\(viewModel.formattedCleanableSize) can be cleaned")
@@ -306,7 +301,7 @@ struct SmartCleanView: View {
                             }
                             Spacer()
                         }
-                        .padding(.vertical, 2)
+                        .padding(.vertical, 4)
                         .padding(.horizontal, 4)
                     }
 
