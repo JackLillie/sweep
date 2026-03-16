@@ -22,15 +22,25 @@ struct SidebarView: View {
         .safeAreaInset(edge: .bottom, spacing: 0) {
             VStack(spacing: 4) {
                 Divider()
-                HStack {
+                HStack(spacing: 4) {
                     Image(systemName: "leaf.fill")
                         .foregroundStyle(.green)
                         .font(.system(size: 11))
-                    Text("Powered by Mole")
+                    Text("Powered by ")
                         .font(.system(size: 11))
                         .foregroundStyle(.secondary)
+                    + Text("[Mole](https://github.com/tw93/mole)")
+                        .font(.system(size: 11))
                 }
-                .padding(.vertical, 8)
+                .environment(\.openURL, OpenURLAction { url in
+                    NSWorkspace.shared.open(url)
+                    return .handled
+                })
+                .onHover { hovering in
+                    if hovering { NSCursor.pointingHand.push() } else { NSCursor.pop() }
+                }
+                .padding(.top, 8)
+                .padding(.bottom, 10)
             }
         }
     }

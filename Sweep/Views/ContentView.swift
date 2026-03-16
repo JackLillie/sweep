@@ -27,8 +27,9 @@ struct ContentView: View {
                         }
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .contentMargins(.top, 0, for: .scrollContent)
                 }
-                .navigationSplitViewColumnWidth(min: 200, ideal: 220, max: 260)
+                .navigationSplitViewColumnWidth(min: 160, ideal: 180, max: 220)
             } else {
                 MoleNotFoundView {
                     Task { await viewModel.recheckMole() }
@@ -63,7 +64,6 @@ final class AppViewModel: ObservableObject {
     }
 
     func loadSystemInfo() async {
-        isLoading = true
         let status = await bridge.fetchStatus()
         systemInfo = SystemInfo(from: status)
         isLoading = false

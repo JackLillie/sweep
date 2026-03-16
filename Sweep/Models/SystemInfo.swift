@@ -38,7 +38,7 @@ struct SystemInfo {
     init() {}
 
     init(from status: MoleStatus) {
-        hostname = status.host
+        hostname = status.host.replacingOccurrences(of: ".local", with: "")
         macModel = status.hardware.model
         osVersion = status.hardware.osVersion
         uptime = status.uptime

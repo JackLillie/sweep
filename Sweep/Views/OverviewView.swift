@@ -5,20 +5,34 @@ struct OverviewView: View {
     @State private var refreshTimer: Timer?
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: 20) {
-                header
-                healthBadge
-                gaugesRow
-                infoRows
-                quickActions
+        Group {
+            if viewModel.isLoading {
+                VStack(spacing: 12) {
+                    ProgressView()
+                        .scaleEffect(0.8)
+                    Text("Loading...")
+                        .font(.system(size: 13))
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                ScrollView {
+                    VStack(spacing: 16) {
+                        header
+                        healthBadge
+                        gaugesRow
+                        infoRows
+                        quickActions
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 24)
+                }
             }
-            .padding(.horizontal, 24)
-            .padding(.top, 4)
-            .padding(.bottom, 24)
         }
         .background(Color(nsColor: .windowBackgroundColor))
         .scrollContentBackground(.hidden)
+        .toolbarBackground(.hidden, for: .windowToolbar)
+        .navigationTitle("")
         .onAppear { startRefresh() }
         .onDisappear { stopRefresh() }
         .alert("Action Failed", isPresented: showingError, presenting: viewModel.actionError) { _ in
@@ -39,16 +53,13 @@ struct OverviewView: View {
 
     private var header: some View {
         HStack {
-            Text(viewModel.systemInfo.hostname.isEmpty ? "My Mac" : viewModel.systemInfo.hostname)
-                .font(.system(size: 20, weight: .semibold))
+            Text(viewModel.systemInfo.hostname.isEmpty ? "Overview" : viewModel.systemInfo.hostname)
+                .font(.system(size: 18, weight: .semibold))
             Spacer()
-            VStack(alignment: .trailing, spacing: 2) {
-                Text(viewModel.systemInfo.osVersion)
-                    .font(.system(size: 12))
-                    .foregroundStyle(.secondary)
-                Text(viewModel.systemInfo.macModel)
+            if !viewModel.systemInfo.macModel.isEmpty {
+                Text("\(viewModel.systemInfo.macModel) · \(viewModel.systemInfo.osVersion)")
                     .font(.system(size: 11))
-                    .foregroundStyle(.tertiary)
+                    .foregroundStyle(.secondary)
             }
         }
     }
@@ -70,28 +81,38 @@ struct OverviewView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("System Health")
                         .font(.system(size: 13, weight: .semibold))
-                    Text(viewModel.systemInfo.healthScoreMsg.isEmpty ? healthLabel : viewModel.systemInfo.healthScoreMsg)
+                    Text(healthSubtitle)
                         .font(.system(size: 12))
                         .foregroundStyle(.secondary)
                 }
                 Spacer()
             }
             .padding(.vertical, 2)
+            .padding(.horizontal, 4)
         }
     }
 
     private var healthColor: Color {
         let score = viewModel.systemInfo.healthScore
-        if score >= 80 { return .green }
-        if score >= 50 { return .orange }
+        if score >= 90 { return .green }
+        if score >= 60 { return .orange }
         return .red
     }
 
-    private var healthLabel: String {
-        let score = viewModel.systemInfo.healthScore
-        if score >= 80 { return "Looking good" }
-        if score >= 50 { return "Could be better" }
-        return "Needs attention"
+    private var healthSubtitle: String {
+        let msg = viewModel.systemInfo.healthScoreMsg
+        if msg.isEmpty {
+            let score = viewModel.systemInfo.healthScore
+            if score >= 90 { return "Looking good" }
+            if score >= 60 { return "Could be better" }
+            return "Needs attention"
+        }
+        // mole returns e.g. "Good: Disk Almost Full" — strip the rating prefix since we show the score
+        if let colonIndex = msg.firstIndex(of: ":") {
+            let detail = msg[msg.index(after: colonIndex)...].trimmingCharacters(in: .whitespaces)
+            if !detail.isEmpty { return detail }
+        }
+        return msg
     }
 
     // MARK: - Gauges
@@ -140,6 +161,7 @@ struct OverviewView: View {
                         .foregroundStyle(.secondary)
                 }
                 .padding(.vertical, 2)
+                .padding(.horizontal, 4)
             }
 
             GroupBox {
@@ -160,6 +182,7 @@ struct OverviewView: View {
                     .foregroundStyle(.secondary)
                 }
                 .padding(.vertical, 2)
+                .padding(.horizontal, 4)
             }
 
             if viewModel.systemInfo.hasBattery {
@@ -185,6 +208,7 @@ struct OverviewView: View {
                         .foregroundStyle(.secondary)
                     }
                     .padding(.vertical, 2)
+                    .padding(.horizontal, 4)
                 }
             }
         }
@@ -216,6 +240,8 @@ struct OverviewView: View {
                 Text("Quick Actions")
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(.secondary)
+                    .padding(.leading, 8)
+                    .padding(.top, 4)
 
                 HStack(spacing: 12) {
                     QuickActionButton(
@@ -296,25 +322,27 @@ struct GaugeCard: View {
 
     var body: some View {
         GroupBox {
-            VStack(spacing: 12) {
+            VStack(spacing: 8) {
                 Gauge(value: value) {
-                    Text(title)
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(.secondary)
+                    EmptyView()
                 } currentValueLabel: {
                     Text("\(Int(value * 100))%")
-                        .font(.system(size: 20, weight: .bold, design: .rounded))
+                        .font(.system(size: 16, weight: .bold, design: .rounded))
+                        .padding(.horizontal, 2)
                 }
                 .gaugeStyle(.accessoryCircular)
                 .tint(color)
-                .scaleEffect(1.4)
-                .padding(.top, 10)
+                .scaleEffect(1.3)
+                .padding(.top, 8)
+
+                Text(title)
+                    .font(.system(size: 12, weight: .semibold))
 
                 Text(subtitle)
                     .font(.system(size: 11))
                     .foregroundStyle(.secondary)
             }
-            .padding(.vertical, 8)
+            .padding(.vertical, 6)
             .frame(maxWidth: .infinity)
         }
     }
@@ -332,25 +360,32 @@ struct QuickActionButton: View {
 
     var body: some View {
         Button(action: action) {
-            VStack(spacing: 6) {
+            VStack(spacing: 8) {
                 Image(systemName: icon)
-                    .font(.system(size: 18))
+                    .font(.system(size: 16))
                     .foregroundStyle(color)
-                    .frame(width: 36, height: 36)
-                    .background(color.opacity(0.1), in: RoundedRectangle(cornerRadius: 8))
+                    .frame(width: 40, height: 40)
+                    .background(color.opacity(isHovering ? 0.2 : 0.1), in: RoundedRectangle(cornerRadius: 10))
 
                 Text(title)
-                    .font(.system(size: 11))
-                    .foregroundStyle(.primary)
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(isHovering ? .primary : .secondary)
             }
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 8)
+            .padding(.vertical, 10)
             .background(
-                RoundedRectangle(cornerRadius: 8)
+                RoundedRectangle(cornerRadius: 10)
                     .fill(isHovering ? Color.primary.opacity(0.04) : .clear)
             )
         }
         .buttonStyle(.plain)
-        .onHover { isHovering = $0 }
+        .onHover { hovering in
+            isHovering = hovering
+            if hovering {
+                NSCursor.pointingHand.push()
+            } else {
+                NSCursor.pop()
+            }
+        }
     }
 }
