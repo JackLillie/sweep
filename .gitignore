@@ -20,3 +20,6 @@ Package.resolved
 .DS_Store
 *.swp
 *~
+
+# Local
+TODO.md
