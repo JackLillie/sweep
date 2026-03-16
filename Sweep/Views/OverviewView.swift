@@ -276,11 +276,12 @@ struct InfoCard: View {
 
     var body: some View {
         GroupBox {
-            VStack(spacing: 6) {
+            VStack(spacing: 8) {
                 Image(systemName: icon)
-                    .font(.system(size: 18))
+                    .font(.system(size: 28))
                     .foregroundStyle(iconColor)
-                    .padding(.top, 4)
+                    .frame(height: 36)
+                    .padding(.top, 8)
 
                 Text(value)
                     .font(.system(size: 16, weight: .bold, design: .rounded))
@@ -288,14 +289,10 @@ struct InfoCard: View {
                 Text(title)
                     .font(.system(size: 12, weight: .semibold))
 
-                if !subtitle.isEmpty {
-                    Text(subtitle)
-                        .font(.system(size: 10))
-                        .foregroundStyle(.secondary)
-                } else {
-                    Text(" ")
-                        .font(.system(size: 10))
-                }
+                Text(subtitle.isEmpty ? " " : subtitle)
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+                    .opacity(subtitle.isEmpty ? 0 : 1)
             }
             .padding(.vertical, 6)
             .frame(maxWidth: .infinity)
