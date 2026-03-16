@@ -45,11 +45,14 @@ struct SmartCleanView: View {
         .navigationTitle("")
         .alert("Clean Selected Items?", isPresented: $showCleanConfirm) {
             Button("Cancel", role: .cancel) {}
-            Button("Clean", role: .destructive) {
-                Task { await viewModel.runClean() }
+            Button("Clean") {
+                Task { await viewModel.runClean(deepClean: false) }
+            }
+            Button("Deep Clean (includes system caches)") {
+                Task { await viewModel.runClean(deepClean: true) }
             }
         } message: {
-            Text("This will permanently remove \(viewModel.formattedCleanableSize) of files. This cannot be undone.")
+            Text("This will permanently remove \(viewModel.formattedCleanableSize) of files. Deep Clean requires your password to clear system caches.")
         }
     }
 

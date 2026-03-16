@@ -105,9 +105,19 @@ final class AppViewModel: ObservableObject {
 
     @Published var cleanActivity = ""
 
-    func runClean() async {
+    func runClean(deepClean: Bool = false) async {
         isCleaning = true
         cleanActivity = "Starting clean..."
+
+        if deepClean {
+            cleanActivity = "Requesting administrator access..."
+            do {
+                try await bridge.cacheSudo()
+            } catch {
+                // User cancelled the password prompt — continue with normal clean
+            }
+        }
+
         do {
             let result = try await bridge.runCleanStreaming { [weak self] activity in
                 Task { @MainActor in

@@ -360,6 +360,13 @@ actor MoleBridge {
         try await runMoleText("clean", timeout: 300, feedStdin: true)
     }
 
+    func cacheSudo() throws {
+        let script = """
+        do shell script "sudo -v" with administrator privileges
+        """
+        try runAppleScript(script)
+    }
+
     func runCleanStreaming(onActivity: @escaping @Sendable (String) -> Void) async throws -> String {
         guard let path = molePath else { throw MoleBridgeError.moleNotInstalled }
 
