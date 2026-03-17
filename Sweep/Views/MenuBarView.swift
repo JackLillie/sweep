@@ -68,7 +68,19 @@ struct MenuBarView: View {
             // Quick actions
             VStack(spacing: 2) {
                 MenuBarActionButton(icon: "sparkles", label: "Smart Clean", color: .purple) {
-                    Task { await viewModel.scanForCleanables() }
+                    openToPage(.smartClean)
+                }
+
+                MenuBarActionButton(icon: "square.grid.2x2", label: "Applications", color: .orange) {
+                    openToPage(.applications)
+                }
+
+                MenuBarActionButton(icon: "internaldrive", label: "Storage", color: .green) {
+                    openToPage(.storage)
+                }
+
+                MenuBarActionButton(icon: "lock.shield", label: "Permissions", color: .red) {
+                    openToPage(.permissions)
                 }
 
                 MenuBarActionButton(icon: "network", label: "Flush DNS Cache", color: .blue) {
@@ -82,10 +94,7 @@ struct MenuBarView: View {
 
             VStack(spacing: 2) {
                 MenuBarActionButton(icon: "macwindow", label: "Show Main Window", color: .primary) {
-                    dismiss()
-                    NSApp.setActivationPolicy(.regular)
-                    NSApp.activate(ignoringOtherApps: true)
-                    openWindow(id: "main")
+                    openMainWindow()
                 }
 
                 MenuBarActionButton(icon: "power", label: "Quit Sweep", color: .primary) {
@@ -97,6 +106,18 @@ struct MenuBarView: View {
             .padding(.bottom, 6)
         }
         .frame(width: 280)
+    }
+
+    private func openToPage(_ item: NavigationItem) {
+        viewModel.selectedItem = item
+        openMainWindow()
+    }
+
+    private func openMainWindow() {
+        dismiss()
+        NSApp.setActivationPolicy(.regular)
+        NSApp.activate(ignoringOtherApps: true)
+        openWindow(id: "main")
     }
 }
 

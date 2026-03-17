@@ -1,7 +1,6 @@
 import SwiftUI
 
 struct ContentView: View {
-    @State private var selectedItem: NavigationItem? = .overview
     @ObservedObject var viewModel: AppViewModel
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
 
@@ -11,10 +10,10 @@ struct ContentView: View {
                 OnboardingView(hasCompletedOnboarding: $hasCompletedOnboarding)
             } else if viewModel.moleAvailable {
                 NavigationSplitView {
-                    SidebarView(selection: $selectedItem)
+                    SidebarView(selection: $viewModel.selectedItem)
                 } detail: {
                     Group {
-                        switch selectedItem {
+                        switch viewModel.selectedItem {
                         case .overview:
                             OverviewView(viewModel: viewModel)
                         case .smartClean:
@@ -134,6 +133,7 @@ final class AppViewModel: ObservableObject {
         isCleaning = false
     }
 
+    @Published var selectedItem: NavigationItem? = .overview
     @Published var actionError: String?
 
     func flushDNS() async {
