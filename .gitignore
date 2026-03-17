@@ -25,6 +25,7 @@ Package.resolved
 *.dmg
 
 # Local
+.env
 TODO.md
 .claude/
 .agents/

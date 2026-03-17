@@ -146,8 +146,12 @@ struct ApplicationsView: View {
                 }
             }
 
+            let ownBundleID = Bundle.main.bundleIdentifier ?? "dev.jacklillie.Sweep"
+
             for (fullPath, item) in allPaths {
                 let bundle = Bundle(path: fullPath)
+                if bundle?.bundleIdentifier == ownBundleID { continue }
+
                 let name = bundle?.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String
                     ?? bundle?.object(forInfoDictionaryKey: "CFBundleName") as? String
                     ?? item.replacingOccurrences(of: ".app", with: "")
